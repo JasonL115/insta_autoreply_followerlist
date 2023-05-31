@@ -1,0 +1,112 @@
+import time
+import random
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
+import selenium.common.exceptions as ex
+from selenium.webdriver.common.action_chains import ActionChains
+
+
+def random_comment():
+    with open(r'comments.txt', 'r') as f:
+        comments = [line.strip() for line in f]
+    comment = random.choice(comments)
+    return comment
+
+
+class InstaBot:
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+        self.bot = webdriver.Firefox()
+
+    # ---- Login section -----
+    def Login(self):
+        bot = self.bot
+        bot.get("https://www.instagram.com/accounts/login/")
+        time.sleep(2)
+        username = bot.find_element(By.NAME, "username")
+        password = bot.find_element(By.NAME, "password")
+        username.clear()
+        password.clear()
+        username.send_keys(self.username)
+        password.send_keys(self.password)
+
+        time.sleep(2)
+        bot.find_element(By.CLASS_NAME, "x9f619.xjbqb8w.x78zum5.x168nmei.x13lgxp2.x5pf9jr.xo71vjh.x1xmf6yo.x1e56ztr.x540dpk.x1m39q7l.x1n2onr6.x1plvlek.xryxfnj.x1c4vz4f.x2lah0s.xdt5ytf.xqjyukv.x1qjc9v5.x1oa3qoh.x1nhvcw1").click()
+        time.sleep(5)
+
+        bot.get("https://www.instagram.com/traditional.masculinity/")
+
+
+    # ---- Story section -----  
+
+    def openStories(self, number_of_stories):
+        bot = self.bot
+        time.sleep(2)
+
+        bot.find_element(
+            By.CSS_SELECTOR, "li.xl565be:nth-child(2) > a:nth-child(1)").click()
+        time.sleep(3)
+
+        # Scrolls
+        pop_up_window = WebDriverWait(bot, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "._aano")))
+        i = 1
+        num_scrolls = 4
+        for i in range(num_scrolls):
+            bot.execute_script(
+                'arguments[0].scrollTop = arguments[0].scrollTop + arguments[0].offsetHeight;',
+                pop_up_window)
+            time.sleep(2)
+
+        for i in range(number_of_stories):
+            story_elements = bot.find_elements(By.CSS_SELECTOR, "._aarf._aarg")
+            print(len(story_elements))
+            
+            for story_index in range(len(story_elements)):
+                try:
+                    story_element = bot.find_elements(By.CSS_SELECTOR, "._aarf._aarg")[story_index]  # Find the current story element
+                    # Check if the story element is clickable (indicating that they have a story)
+                    is_story_element_clickable = story_element.is_enabled() and story_element.is_displayed()
+                    if is_story_element_clickable:
+                        # Scroll to the element to make it visible
+                        bot.execute_script("arguments[0].scrollIntoView(true);", story_element)
+                        time.sleep(3)
+                        
+                        # Click on the story
+                        actions = ActionChains(bot)
+                        actions.move_to_element(story_element).click().perform()
+                        time.sleep(5)
+                        
+                        # Check if the comment box is present
+                        try:
+                            bot.find_element(By.CSS_SELECTOR, "._abx2")
+                            # Comment
+                            bot.find_element(By.CSS_SELECTOR, "._abx2").click()
+                            time.sleep(2)
+                            # Reply
+                            bot.find_element(By.CSS_SELECTOR, ".xqui205 > div:nth-child(1) > div:nth-child(3) > div:nth-child(1) > span:nth-child(1)").click()
+                        except ex.NoSuchElementException:
+                            pass
+                        
+                        # Go back to the stories list
+                        bot.execute_script("window.history.go(-1)")
+                        time.sleep(5)
+                        
+                except ex.StaleElementReferenceException:
+                    continue
+
+            time.sleep(5)  # Add a delay between each iteration
+            i += 1
+
+
+
+go = InstaBot("username", "password")
+go.Login()
+go.openStories(1)
